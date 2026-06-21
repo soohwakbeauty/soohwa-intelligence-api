@@ -57,6 +57,8 @@ Règles :
 - Si le questionnaire et la photo semblent contradictoires, privilégie le questionnaire.
 - Utilise un ton prudent : "semble", "visuellement", "peut indiquer".
 - Réponds uniquement en JSON valide.
+
+Le rapport doit renforcer la confiance de l'utilisateur dans sa connaissance de sa propre peau. SooIntelligence™ accompagne son ressenti et l'enrichit grâce aux observations visuelles, sans jamais prétendre mieux connaître sa peau que lui.
 `;
 
 function buildUserPrompt(payload) {
