@@ -30,6 +30,13 @@ Observations autorisées :
 - manque d'éclat
 - confort cutané apparent
 
+Tu dois générer des textes personnalisés en français :
+- expertAnalysis_fr : analyse courte, bienveillante, 80 à 120 mots.
+- routineLogic_fr : explication de la logique de routine, sans citer de produit.
+- userFriendlySummary_fr : résumé simple en 2 à 3 phrases.
+Ces textes doivent être personnalisés selon le questionnaire et la photo.
+
+
 Règles :
 - Si la photo est absente, usable doit être false.
 - Si la photo est floue, sombre, filtrée ou mal cadrée, réduis confidence.
@@ -259,7 +266,10 @@ export default async function handler(req, res) {
               },
 
               summary_fr: { type: "string" },
-              limits_fr: { type: "string" }
+expertAnalysis_fr: { type: "string" },
+routineLogic_fr: { type: "string" },
+userFriendlySummary_fr: { type: "string" },
+limits_fr: { type: "string" }
             },
             required: [
               "usable",
@@ -270,7 +280,10 @@ export default async function handler(req, res) {
               "needs",
               "priority",
               "summary_fr",
-              "limits_fr"
+"expertAnalysis_fr",
+"routineLogic_fr",
+"userFriendlySummary_fr",
+"limits_fr"
             ]
           }
         }
