@@ -7,42 +7,66 @@
 
 <body>
 
+<input type="file" id="photo" accept="image/*">
+<br><br>
+
 <button id="test">
-Tester OpenAI
+Tester OpenAI avec photo
 </button>
 
 <pre id="result"></pre>
 
 <script>
-document.getElementById("test").onclick = async () => {
+let selectedPhoto = null;
 
-const payload = {
-    questionnaire:{
-        skin:"mixte",
-        concern:"rougeurs",
-        hydration:"moyenne"
-    },
+document.getElementById("photo").addEventListener("change", function () {
+  const file = this.files[0];
+  if (!file) return;
 
-    photo:{
-        provided:false
-    }
-};
+  const reader = new FileReader();
 
-const res = await fetch(
-"https://soohwa-intelligence-api.vercel.app/api/analyze",
-{
-    method:"POST",
-    headers:{
-        "Content-Type":"application/json"
-    },
-    body:JSON.stringify(payload)
+  reader.onload = function (event) {
+    selectedPhoto = event.target.result;
+  };
+
+  reader.readAsDataURL(file);
 });
 
-const json = await res.json();
+document.getElementById("test").onclick = async () => {
+  document.getElementById("result").textContent = "Analyse en cours...";
 
-document.getElementById("result").textContent =
-JSON.stringify(json,null,2);
+  const payload = {
+    questionnaire: {
+      skin: "mixte",
+      concern: "rougeurs",
+      hydration: "moyenne",
+      sensitivity: "modérée",
+      intensity: "moyenne",
+      age: "25-34"
+    },
 
+    photo: {
+      provided: !!selectedPhoto,
+      base64: selectedPhoto,
+      quality: "unknown"
+    }
+  };
+
+  const res = await fetch(
+    "https://soohwa-intelligence-api.vercel.app/api/analyze",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    }
+  );
+
+  const json = await res.json();
+
+  document.getElementById("result").textContent =
+    JSON.stringify(json, null, 2);
 };
 </script>
 

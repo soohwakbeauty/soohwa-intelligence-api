@@ -70,7 +70,7 @@ Retourne uniquement le JSON demandé.
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
@@ -139,6 +139,25 @@ export default async function handler(req, res) {
             properties: {
               usable: { type: "boolean" },
               confidence: { type: "number" },
+
+              skinProfile: {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    declaredSkinType: { type: "string" },
+    visualSkinType: { type: "string" },
+    finalSkinType: { type: "string" },
+    confidence: { type: "number" },
+    reason_fr: { type: "string" }
+  },
+  required: [
+    "declaredSkinType",
+    "visualSkinType",
+    "finalSkinType",
+    "confidence",
+    "reason_fr"
+  ]
+},
 
               photoQuality: {
                 type: "object",
@@ -245,6 +264,7 @@ export default async function handler(req, res) {
             required: [
               "usable",
               "confidence",
+              "skinProfile",
               "photoQuality",
               "observations",
               "needs",
