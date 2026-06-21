@@ -4,17 +4,105 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+const SYSTEM_PROMPT = `
+Tu es SkinScan™, le module d'observation visuelle de Soohwa Intelligence™.
+
+Rôle :
+- Observer une photo de visage dans un cadre cosmétique.
+- Croiser prudemment avec les réponses du questionnaire.
+- Retourner uniquement un JSON strict.
+
+Interdictions :
+- Ne jamais poser de diagnostic médical.
+- Ne jamais identifier une maladie.
+- Ne jamais recommander un produit.
+- Ne jamais promettre un résultat.
+- Ne jamais juger l'apparence de la personne.
+- Ne jamais estimer l'âge, le genre, l'origine ou l'état de santé.
+
+Observations autorisées :
+- brillance visible
+- rougeurs visibles
+- sécheresse apparente
+- texture irrégulière
+- pores visibles
+- teint terne
+- manque d'éclat
+- confort cutané apparent
+
+Règles :
+- Si la photo est absente, usable doit être false.
+- Si la photo est floue, sombre, filtrée ou mal cadrée, réduis confidence.
+- Si le questionnaire et la photo semblent contradictoires, privilégie le questionnaire.
+- Utilise un ton prudent : "semble", "visuellement", "peut indiquer".
+- Réponds uniquement en JSON valide.
+`;
+
+function buildUserPrompt(payload) {
+  const questionnaire = payload?.questionnaire || {};
+  const photo = payload?.photo || {};
+
+  return `
+CONTEXTE
+Le questionnaire suivant a été rempli par l'utilisateur.
+Ces réponses représentent sa perception de sa peau.
+
+QUESTIONNAIRE
+Type de peau : ${questionnaire.skin || "non renseigné"}
+Sensibilité : ${questionnaire.sensitivity || "non renseigné"}
+Hydratation : ${questionnaire.hydration || "non renseigné"}
+Préoccupation principale : ${questionnaire.concern || "non renseigné"}
+Intensité : ${questionnaire.intensity || "non renseigné"}
+Âge : ${questionnaire.age || "non renseigné"}
+
+PHOTO
+Photo fournie : ${photo.provided ? "oui" : "non"}
+Qualité déclarée : ${photo.quality || "unknown"}
+Largeur : ${photo.width || "unknown"}
+Hauteur : ${photo.height || "unknown"}
+Orientation : ${photo.orientation || "unknown"}
+
+MISSION
+Analyse uniquement les éléments cosmétiques visibles.
+Ne recommande aucun produit.
+Retourne uniquement le JSON demandé.
+`;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({
+      success: false,
+      error: "Method not allowed"
+    });
   }
 
   try {
     if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ error: "OPENAI_API_KEY missing" });
+      return res.status(500).json({
+        success: false,
+        error: "OPENAI_API_KEY missing"
+      });
     }
 
-    const payload = req.body?.payload || req.body;
+    const payload = req.body?.payload || req.body || {};
+    const photoBase64 = payload?.photo?.base64 || null;
+    const hasPhoto = Boolean(payload?.photo?.provided && photoBase64);
+
+    const content = [
+      {
+        type: "input_text",
+        text: buildUserPrompt(payload)
+      }
+    ];
+
+    if (hasPhoto) {
+      content.push({
+        type: "input_image",
+        image_url: photoBase64,
+        detail: "low"
+      });
+    }
 
     const response = await client.responses.create({
       model: "gpt-5.5",
@@ -24,71 +112,126 @@ export default async function handler(req, res) {
           content: [
             {
               type: "input_text",
-              text: `Tu es SkinScan™, le module d’observation visuelle de Soohwa Intelligence™.
-Tu fais uniquement des observations cosmétiques visibles.
-Tu ne poses jamais de diagnostic médical.
-Tu ne recommandes jamais de produits.
-Réponds uniquement en JSON valide.`
+              text: SYSTEM_PROMPT
             }
           ]
         },
         {
           role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: `Analyse ce payload Soohwa. Si une photo est fournie, utilise-la comme observation visuelle. Payload : ${JSON.stringify(payload)}`
-            },
-            ...(payload?.photo?.provided && payload?.photo?.base64
-              ? [
-                  {
-                    type: "input_image",
-                    image_url: payload.photo.base64,
-                    detail: "low"
-                  }
-                ]
-              : [])
-          ]
+          content
         }
       ],
       text: {
         format: {
           type: "json_schema",
-          name: "skinscan_result",
+          name: "soohwa_skinscan_result",
+          strict: true,
           schema: {
             type: "object",
             additionalProperties: false,
             properties: {
               usable: { type: "boolean" },
               confidence: { type: "number" },
+
               photoQuality: {
                 type: "object",
                 additionalProperties: false,
                 properties: {
-                  lighting: { type: "string" },
-                  sharpness: { type: "string" },
-                  framing: { type: "string" },
+                  lighting: {
+                    type: "string",
+                    enum: ["poor", "medium", "good", "unknown"]
+                  },
+                  sharpness: {
+                    type: "string",
+                    enum: ["poor", "medium", "good", "unknown"]
+                  },
+                  framing: {
+                    type: "string",
+                    enum: ["poor", "medium", "good", "unknown"]
+                  },
                   filter_suspected: { type: "boolean" }
                 },
-                required: ["lighting", "sharpness", "framing", "filter_suspected"]
+                required: [
+                  "lighting",
+                  "sharpness",
+                  "framing",
+                  "filter_suspected"
+                ]
               },
+
               observations: {
                 type: "object",
                 additionalProperties: false,
                 properties: {
-                  shine: { type: "string" },
-                  redness: { type: "string" },
-                  dryness: { type: "string" },
-                  texture: { type: "string" },
-                  pores: { type: "string" },
-                  dullness: { type: "string" }
+                  shine: {
+                    type: "string",
+                    enum: ["low", "medium", "high", "unknown"]
+                  },
+                  redness: {
+                    type: "string",
+                    enum: ["low", "medium", "high", "unknown"]
+                  },
+                  dryness: {
+                    type: "string",
+                    enum: ["low", "medium", "high", "unknown"]
+                  },
+                  texture: {
+                    type: "string",
+                    enum: ["low", "medium", "high", "unknown"]
+                  },
+                  pores: {
+                    type: "string",
+                    enum: ["low", "medium", "high", "unknown"]
+                  },
+                  dullness: {
+                    type: "string",
+                    enum: ["low", "medium", "high", "unknown"]
+                  }
                 },
-                required: ["shine", "redness", "dryness", "texture", "pores", "dullness"]
+                required: [
+                  "shine",
+                  "redness",
+                  "dryness",
+                  "texture",
+                  "pores",
+                  "dullness"
+                ]
               },
+
               needs: {
                 type: "array",
-                items: { type: "string" }
+                items: {
+                  type: "string",
+                  enum: [
+                    "hydration",
+                    "barrier",
+                    "glow",
+                    "texture",
+                    "balance",
+                    "soothing",
+                    "firmness",
+                    "pores"
+                  ]
+                }
               },
+
+              priority: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    need: { type: "string" },
+                    level: {
+                      type: "string",
+                      enum: ["low", "medium", "high"]
+                    },
+                    reason_fr: { type: "string" }
+                  },
+                  required: ["need", "level", "reason_fr"]
+                }
+              },
+
               summary_fr: { type: "string" },
               limits_fr: { type: "string" }
             },
@@ -98,11 +241,11 @@ Réponds uniquement en JSON valide.`
               "photoQuality",
               "observations",
               "needs",
+              "priority",
               "summary_fr",
               "limits_fr"
             ]
-          },
-          strict: true
+          }
         }
       }
     });
@@ -111,14 +254,15 @@ Réponds uniquement en JSON valide.`
 
     return res.status(200).json({
       success: true,
+      source: "openai",
       result
     });
   } catch (error) {
-    console.error(error);
+    console.error("Soohwa analyze error:", error);
 
     return res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message || "Unknown server error"
     });
   }
 }
