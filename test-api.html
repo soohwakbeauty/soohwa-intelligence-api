@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Soohwa API Test</title>
+</head>
+
+<body>
+
+<button id="test">
+Tester OpenAI
+</button>
+
+<pre id="result"></pre>
+
+<script>
+document.getElementById("test").onclick = async () => {
+
+const payload = {
+    questionnaire:{
+        skin:"mixte",
+        concern:"rougeurs",
+        hydration:"moyenne"
+    },
+
+    photo:{
+        provided:false
+    }
+};
+
+const res = await fetch(
+"https://soohwa-intelligence-api.vercel.app/api/analyze",
+{
+    method:"POST",
+    headers:{
+        "Content-Type":"application/json"
+    },
+    body:JSON.stringify(payload)
+});
+
+const json = await res.json();
+
+document.getElementById("result").textContent =
+JSON.stringify(json,null,2);
+
+};
+</script>
+
+</body>
+</html>
