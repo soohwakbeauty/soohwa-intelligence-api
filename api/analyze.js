@@ -5,60 +5,39 @@ const client = new OpenAI({
 });
 
 const SYSTEM_PROMPT = `
-Tu es SooIntelligence™, le moteur d’analyse cosmétique de Soohwa.
-SooScan™ est uniquement le module d’observation visuelle de la photo.
+Tu es SooIntelligence™, le moteur cosmétique de Soohwa.
+SooScan™ est uniquement le module d'analyse photo.
 
-Rôle :
-- Observer une photo de visage dans un cadre cosmétique.
-- Interpréter les observations visuelles en respectant toujours le ressenti déclaré dans le questionnaire.
-- Retourner uniquement un JSON strict.
+Règles absolues :
+- Le questionnaire est toujours prioritaire.
+- La photo complète uniquement, elle ne remplace jamais le ressenti utilisateur.
+- Diagnostic cosmétique uniquement, jamais médical.
+- Ne parle jamais d'âge, genre, origine, santé ou maladie.
+- Ne recommande aucun produit précis.
+- Ton premium, humain, court, naturel.
+- Pas de phrases longues.
+- Pas de répétition.
 
-Le questionnaire représente le ressenti réel de l'utilisateur.
-Ce ressenti est toujours prioritaire.
-Les observations visuelles servent uniquement à compléter, confirmer ou nuancer le questionnaire.
-Ne contredis jamais directement le type de peau ou la sensibilité déclarés.
-Si une différence apparaît entre la photo et le questionnaire, explique avec prudence que les conditions de prise de vue, la lumière, les soins récents ou un état temporaire de la peau peuvent influencer les observations.
-Le rôle de SooIntelligence™ est d'enrichir la compréhension de la peau, jamais de remplacer le ressenti de l'utilisateur.
+Si une photo est fournie :
+- utilise-la seulement pour nuancer avec prudence.
+- utilise : "semble", "peut indiquer", "visuellement".
+- ne contredis jamais le questionnaire.
 
-Interdictions :
-- Ne jamais poser de diagnostic médical.
-- Ne jamais identifier une maladie.
-- Ne jamais recommander un produit.
-- Ne jamais promettre un résultat.
-- Ne jamais juger l'apparence de la personne.
-- Ne jamais estimer l'âge, le genre, l'origine ou l'état de santé.
+Si aucune photo n'est fournie :
+- base tout uniquement sur le questionnaire.
+- ne mentionne jamais photo, visuel, observation, lumière, pores, rougeurs, texture ou brillance.
 
-Observations autorisées :
-- brillance visible
-- rougeurs visibles
-- sécheresse apparente
-- texture irrégulière
-- pores visibles
-- teint terne
-- manque d'éclat
-- confort cutané apparent
+Tu dois retourner uniquement un JSON strict avec 3 textes courts :
+- expertAnalysis_fr : 2 phrases maximum.
+- userFriendlySummary_fr : 2 phrases maximum.
+- routineLogic_fr : 2 phrases maximum.
 
-Tu dois générer des textes personnalisés en français :
-- expertAnalysis_fr : analyse courte, bienveillante, 80 à 120 mots.
-- routineLogic_fr : explication de la logique de routine, sans citer de produit.
-- userFriendlySummary_fr : résumé simple en 2 à 3 phrases.
-Ces textes doivent être personnalisés selon le questionnaire et la photo.
+Chaque texte doit avoir un rôle différent :
+1. expertAnalysis_fr = lecture du profil.
+2. userFriendlySummary_fr = priorité retenue.
+3. routineLogic_fr = pourquoi la routine est cohérente.
 
-Structure des textes :
-- Ne présente jamais un type de peau comme une vérité absolue.
-- Utilise plutôt des formulations comme : "profil déclaré", "profil observé", "tendance visible", "semble cohérent avec".
-- Si tu mentionnes un type de peau, relie-le toujours au questionnaire.
-- Ne dis jamais : "Votre peau est mixte" si l'utilisateur a déclaré une peau sèche ou sensible.
-- Préfère : "Votre profil déclaré indique une peau sèche, avec quelques observations visuelles complémentaires."
-
-Règles :
-- Si la photo est absente, usable doit être false.
-- Si la photo est floue, sombre, filtrée ou mal cadrée, réduis confidence.
-- Si le questionnaire et la photo semblent contradictoires, privilégie le questionnaire.
-- Utilise un ton prudent : "semble", "visuellement", "peut indiquer".
-- Réponds uniquement en JSON valide.
-
-Le rapport doit renforcer la confiance de l'utilisateur dans sa connaissance de sa propre peau. SooIntelligence™ accompagne son ressenti et l'enrichit grâce aux observations visuelles, sans jamais prétendre mieux connaître sa peau que lui.
+Maximum 45 mots par champ.
 `;
 
 function buildUserPrompt(payload) {
@@ -156,152 +135,24 @@ export default async function handler(req, res) {
           type: "json_schema",
           name: "soohwa_skinscan_result",
           strict: true,
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              usable: { type: "boolean" },
-              confidence: { type: "number" },
-
-              skinProfile: {
+schema: {
   type: "object",
   additionalProperties: false,
   properties: {
-    declaredSkinType: { type: "string" },
-    visualSkinType: { type: "string" },
-    finalSkinType: { type: "string" },
+    usable: { type: "boolean" },
     confidence: { type: "number" },
-    reason_fr: { type: "string" }
+    expertAnalysis_fr: { type: "string" },
+    userFriendlySummary_fr: { type: "string" },
+    routineLogic_fr: { type: "string" }
   },
   required: [
-    "declaredSkinType",
-    "visualSkinType",
-    "finalSkinType",
+    "usable",
     "confidence",
-    "reason_fr"
+    "expertAnalysis_fr",
+    "userFriendlySummary_fr",
+    "routineLogic_fr"
   ]
-},
-
-              photoQuality: {
-                type: "object",
-                additionalProperties: false,
-                properties: {
-                  lighting: {
-                    type: "string",
-                    enum: ["poor", "medium", "good", "unknown"]
-                  },
-                  sharpness: {
-                    type: "string",
-                    enum: ["poor", "medium", "good", "unknown"]
-                  },
-                  framing: {
-                    type: "string",
-                    enum: ["poor", "medium", "good", "unknown"]
-                  },
-                  filter_suspected: { type: "boolean" }
-                },
-                required: [
-                  "lighting",
-                  "sharpness",
-                  "framing",
-                  "filter_suspected"
-                ]
-              },
-
-              observations: {
-                type: "object",
-                additionalProperties: false,
-                properties: {
-                  shine: {
-                    type: "string",
-                    enum: ["low", "medium", "high", "unknown"]
-                  },
-                  redness: {
-                    type: "string",
-                    enum: ["low", "medium", "high", "unknown"]
-                  },
-                  dryness: {
-                    type: "string",
-                    enum: ["low", "medium", "high", "unknown"]
-                  },
-                  texture: {
-                    type: "string",
-                    enum: ["low", "medium", "high", "unknown"]
-                  },
-                  pores: {
-                    type: "string",
-                    enum: ["low", "medium", "high", "unknown"]
-                  },
-                  dullness: {
-                    type: "string",
-                    enum: ["low", "medium", "high", "unknown"]
-                  }
-                },
-                required: [
-                  "shine",
-                  "redness",
-                  "dryness",
-                  "texture",
-                  "pores",
-                  "dullness"
-                ]
-              },
-
-              needs: {
-                type: "array",
-                items: {
-                  type: "string",
-                  enum: [
-                    "hydration",
-                    "barrier",
-                    "glow",
-                    "texture",
-                    "balance",
-                    "soothing",
-                    "firmness",
-                    "pores"
-                  ]
-                }
-              },
-
-              priority: {
-                type: "array",
-                items: {
-                  type: "object",
-                  additionalProperties: false,
-                  properties: {
-                    need: { type: "string" },
-                    level: {
-                      type: "string",
-                      enum: ["low", "medium", "high"]
-                    },
-                    reason_fr: { type: "string" }
-                  },
-                  required: ["need", "level", "reason_fr"]
-                }
-              },
-
-              summary_fr: { type: "string" },
-expertAnalysis_fr: { type: "string" },
-routineLogic_fr: { type: "string" },
-userFriendlySummary_fr: { type: "string" },
-limits_fr: { type: "string" }
-            },
-            required: [
-              "usable",
-              "confidence",
-              "skinProfile",
-              "photoQuality",
-              "observations",
-              "needs",
-              "priority",
-              "summary_fr",
-"expertAnalysis_fr",
-"routineLogic_fr",
-"userFriendlySummary_fr",
-"limits_fr"
-            ]
-          }
+}
         }
       }
     });
