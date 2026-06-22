@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+visibleimport OpenAI from "openai";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -307,6 +307,8 @@ limits_fr: { type: "string" }
     });
 
     const result = JSON.parse(response.output_text);
+
+    result.usable = hasPhoto;
 
     return res.status(200).json({
       success: true,
