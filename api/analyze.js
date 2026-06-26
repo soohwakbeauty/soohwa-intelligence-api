@@ -52,7 +52,28 @@ Retourne usable:false si :
 En cas de doute, retourne usable:false.
 
 Si usable:false :
-- rejectReason doit expliquer brièvement pourquoi la photo n'est pas exploitable.
+
+Retourne obligatoirement l'un des codes suivants dans rejectReason :
+
+- no_face
+- multiple_faces
+- child
+- animal
+- object
+- illustration
+- blurry
+- dark
+- overexposed
+- face_too_far
+- face_cut
+- sunglasses
+- face_hidden
+- beauty_filter
+- unknown
+
+N'utilise jamais une phrase libre dans rejectReason.
+Retourne uniquement l'un de ces codes.
+
 - expertAnalysis_fr doit indiquer que la photo ne permet pas une analyse fiable.
 - userFriendlySummary_fr doit rester basé uniquement sur le questionnaire.
 - routineLogic_fr doit expliquer que la routine reste construite à partir des réponses.
