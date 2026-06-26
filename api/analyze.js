@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import { buildSoohwaProfile } from "../soointelligence/engine.js";
+import { buildSoohwaPrompt } from "../soointelligence/promptBuilder.js";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -104,143 +106,14 @@ Lorsque plusieurs besoins existent :
 `;
 
 
-function buildCosmeticInterpretation(questionnaire) {
-  const notes = [];
-
-  if (questionnaire.skin === "seche") {
-    notes.push("La peau sèche indique souvent un manque de lipides et une barrière cutanée plus fragile.");
-  }
-
-  if (questionnaire.skin === "mixte") {
-    notes.push("La peau mixte présente généralement des besoins différents selon les zones du visage.");
-  }
-
-  if (questionnaire.skin === "grasse") {
-    notes.push("La peau grasse peut produire davantage de sébum, avec une tendance aux brillances et aux pores visibles.");
-  }
-
-  if (questionnaire.sensitivity === "high") {
-    notes.push("Une sensibilité élevée suggère une peau facilement réactive, à accompagner avec douceur.");
-  }
-
-  if (questionnaire.sensitivity === "medium") {
-    notes.push("Une sensibilité modérée indique une peau parfois réactive selon les soins ou l'environnement.");
-  }
-
-  if (questionnaire.hydration === "often") {
-    notes.push("Une déshydratation fréquente traduit un manque d'eau et peut accentuer l'inconfort cutané.");
-  }
-
-  if (questionnaire.hydration === "sometimes") {
-    notes.push("Une déshydratation occasionnelle peut créer des variations de confort au cours de la journée.");
-  }
-
-  if (questionnaire.concern === "rougeurs") {
-    notes.push("Les rougeurs orientent la routine vers l'apaisement et le renforcement de la barrière cutanée.");
-  }
-
-  if (questionnaire.concern === "imperfections") {
-    notes.push("Les imperfections orientent la routine vers l'équilibre, sans agresser la peau.");
-  }
-
-  if (questionnaire.concern === "pores") {
-    notes.push("Les pores visibles orientent la routine vers l'équilibre du sébum et l'amélioration du grain de peau.");
-  }
-
-  if (questionnaire.concern === "eclat") {
-    notes.push("Le manque d'éclat oriente la routine vers l'hydratation et l'homogénéité du teint.");
-  }
-
-  if (questionnaire.concern === "antiage") {
-    notes.push("Les signes de l'âge orientent la routine vers l'hydratation, la fermeté et la qualité de peau.");
-  }
-
-  return notes.length ? notes.join("\n- ") : "Aucune interprétation cosmétique spécifique disponible.";
-}
-
-function buildRoutineStrategy(questionnaire) {
-  if (questionnaire.concern === "rougeurs") {
-    return "Priorité principale : apaiser la peau. Objectifs secondaires : renforcer la barrière cutanée et améliorer le confort hydrique.";
-  }
-
-  if (questionnaire.concern === "imperfections") {
-    return "Priorité principale : aider la peau à retrouver un meilleur équilibre. Objectifs secondaires : limiter les imperfections sans fragiliser la barrière cutanée.";
-  }
-
-  if (questionnaire.concern === "pores") {
-    return "Priorité principale : améliorer visuellement le grain de peau. Objectifs secondaires : équilibrer le sébum et préserver l'hydratation.";
-  }
-
-  if (questionnaire.concern === "eclat") {
-    return "Priorité principale : raviver l'éclat. Objectifs secondaires : soutenir l'hydratation et améliorer l'homogénéité du teint.";
-  }
-
-  if (questionnaire.concern === "antiage") {
-    return "Priorité principale : préserver la fermeté et la qualité de peau. Objectifs secondaires : renforcer l'hydratation et le confort.";
-  }
-
-  return "Priorité principale : préserver l'équilibre naturel de la peau. Objectif secondaire : construire une routine simple et cohérente.";
-}
-
-
-
-
 
 
 function buildUserPrompt(payload) {
   const questionnaire = payload?.questionnaire || {};
-  const photo = payload?.photo || {};
+  const soohwaProfile = buildSoohwaProfile(questionnaire);
 
-  const cosmeticInterpretation = buildCosmeticInterpretation(questionnaire);
-  const routineStrategy = buildRoutineStrategy(questionnaire);
-
-  return `
-CONSULTATION SOOHWA
-
-Le client vient de compléter un diagnostic cutané.
-Le questionnaire constitue la source principale de l'analyse.
-La photo, lorsqu'elle est disponible, sert uniquement à confirmer, nuancer ou compléter certains éléments visibles.
-
-QUESTIONNAIRE
-
-Type de peau : ${questionnaire.skin || "non renseigné"}
-Sensibilité : ${questionnaire.sensitivity || "non renseigné"}
-Hydratation : ${questionnaire.hydration || "non renseigné"}
-Préoccupation principale : ${questionnaire.concern || "non renseigné"}
-Intensité : ${questionnaire.intensity || "non renseigné"}
-Âge : ${questionnaire.age || "non renseigné"}
-
-INTERPRÉTATION COSMÉTIQUE SOOHWA
-
-- ${cosmeticInterpretation}
-
-STRATÉGIE DE ROUTINE SOOHWA
-
-${routineStrategy}
-
-PHOTO
-
-Photo fournie : ${photo.provided ? "oui" : "non"}
-Qualité déclarée : ${photo.quality || "unknown"}
-Largeur : ${photo.width || "unknown"}
-Hauteur : ${photo.height || "unknown"}
-Orientation : ${photo.orientation || "unknown"}
-
-Si une photo est fournie :
-- observe uniquement les éléments clairement visibles ;
-- confirme ou nuance l'interprétation cosmétique ;
-- ne contredis jamais le questionnaire ;
-- ne transforme jamais une observation visuelle en certitude.
-
-MISSION
-
-Rédige le rapport comme une conseillère skincare Soohwa.
-Ne décris pas le fonctionnement du questionnaire.
-Ne recommande aucun produit précis.
-Retourne uniquement le JSON demandé.
-`;
+  return buildSoohwaPrompt(soohwaProfile, payload);
 }
-
 
 
 
