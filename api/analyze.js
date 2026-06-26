@@ -51,8 +51,9 @@ Tu dois retourner uniquement un JSON strict avec 3 textes.
 
 expertAnalysis_fr
 Rédige une véritable synthèse professionnelle du profil cutané.
-
 Commence directement par la lecture de la peau.
+Le texte doit tenir dans une carte courte sur la page résultat.
+
 
 Explique :
 - les caractéristiques principales de la peau,
@@ -61,8 +62,9 @@ Explique :
 - l'objectif principal de la routine (par exemple : renforcer la barrière cutanée, améliorer l'hydratation, apaiser les sensibilités ou limiter les imperfections).
 
 Le texte doit être fluide, naturel et donner l'impression d'une analyse rédigée par une conseillère skincare haut de gamme.
-
-3 à 4 phrases maximum.
+3 phrases maximum.
+90 mots maximum.
+Une seule idée principale par phrase.
 
 userFriendlySummary_fr
 Résume la priorité cosmétique principale dans un langage simple et rassurant.
