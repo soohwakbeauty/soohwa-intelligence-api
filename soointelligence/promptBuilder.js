@@ -12,6 +12,13 @@ const PRIORITY_LABELS = {
   imperfections: "imperfections"
 };
 
+const INTENSITY_LABELS = {
+  rare: "légère",
+  sometimes: "modérée",
+  regular: "importante",
+  constant: "très marquée"
+};
+
 export function buildSoohwaPrompt(profile, payload = {}) {
   const questionnaire = payload?.questionnaire || {};
   const photo = payload?.photo || {};
@@ -23,6 +30,8 @@ export function buildSoohwaPrompt(profile, payload = {}) {
   const notesText = profile.notes.length
     ? profile.notes.map(note => `- ${note}`).join("\n")
     : "- Aucun contexte cosmétique spécifique disponible.";
+
+  const intensityLabel = INTENSITY_LABELS[questionnaire.intensity] || questionnaire.intensity || "non renseigné";
 
   return `
 CONSULTATION SOOHWA
@@ -44,7 +53,7 @@ Type de peau : ${questionnaire.skin || "non renseigné"}
 Sensibilité : ${questionnaire.sensitivity || "non renseigné"}
 Hydratation : ${questionnaire.hydration || "non renseigné"}
 Préoccupation principale : ${questionnaire.concern || "non renseigné"}
-Intensité : ${questionnaire.intensity || "non renseigné"}
+Intensité : ${intensityLabel}
 
 ANALYSE COSMÉTIQUE SOOHWA
 
