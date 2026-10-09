@@ -11,6 +11,8 @@
 
 `vercel dev` lit surtout `.env` — garde `ANALYZE_SECRET` dedans pour le local.
 
+Helpers d’auth : `soointelligence/security.js` (pas `.mjs`, pour le build Vercel).
+
 ## Lancer l’API en local
 
 ```bash

@@ -6,7 +6,7 @@ import {
   assertAnalyzeAuth,
   assertPayloadShape,
   assertRateLimit
-} from "../lib/security.mjs";
+} from "../soointelligence/security.js";
 
 function getOpenAIClient() {
   return new OpenAI({
