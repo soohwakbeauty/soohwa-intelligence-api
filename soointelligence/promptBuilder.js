@@ -71,6 +71,20 @@ Objectif : traiter d'abord la priorité principale, puis accompagner les besoins
 PHOTO
 
 Photo fournie : ${photo.provided ? "oui" : "non"}
+Nombre de vues : ${
+    Array.isArray(photo.views) && photo.views.length
+      ? photo.views.length
+      : photo.provided
+        ? 1
+        : 0
+  }
+Angles : ${
+    Array.isArray(photo.views) && photo.views.length
+      ? photo.views.map((v) => v.angle || "front").join(", ")
+      : photo.provided
+        ? "front"
+        : "aucune"
+  }
 Qualité déclarée : ${photo.quality || "unknown"}
 Largeur : ${photo.width || "unknown"}
 Hauteur : ${photo.height || "unknown"}

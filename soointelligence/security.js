@@ -117,5 +117,14 @@ export function assertPayloadShape(payload, res) {
     res.status(413).json({ success: false, error: "Photo too large" });
     return false;
   }
+  const views = Array.isArray(payload.photo?.views) ? payload.photo.views : [];
+  let viewsChars = 0;
+  for (const view of views) {
+    if (view && typeof view.base64 === "string") viewsChars += view.base64.length;
+  }
+  if (viewsChars > 12_000_000) {
+    res.status(413).json({ success: false, error: "Photo views too large" });
+    return false;
+  }
   return true;
 }

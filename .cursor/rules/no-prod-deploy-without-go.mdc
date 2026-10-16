@@ -1,0 +1,11 @@
+---
+description: Never deploy to production without Soohwa's explicit GO
+alwaysApply: true
+---
+
+# Production deploy — GO obligatoire
+
+- Ne jamais déployer en **production** (Vercel production, Shopify live, DNS, etc.) sans un **GO explicite** de Soohwa dans le message en cours.
+- Valider d’abord en **local** (et éventuellement preview) avant toute discussion de prod.
+- « Ship », « push », « merge » ou un fix local **ne comptent pas** comme un GO prod.
+- Si un déploiement prod semble utile : le proposer, attendre le GO, puis seulement exécuter.

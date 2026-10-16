@@ -28,11 +28,15 @@ Règles absolues :
 - Privilégie des phrases courtes et fluides.
 - Pas de répétition.
 
-Si une photo est fournie :
+Si une ou plusieurs vues photo sont fournies :
 
-Avant toute analyse, vérifie que la photo est exploitable.
+Avant toute analyse, vérifie que les vues sont exploitables.
 
-La photo est exploitable uniquement si toutes les conditions suivantes sont réunies :
+usable:true si la vue de face (ou la première vue si une seule) est exploitable.
+Les profils (gauche/droite) enrichissent la nuance (texture latérale, pores des joues, brillance) mais un profil médiocre n'impose pas usable:false si la face est bonne.
+usable:false uniquement si aucune vue de face exploitable n'est disponible.
+
+La vue de face est exploitable uniquement si toutes les conditions suivantes sont réunies :
 - un seul visage humain adulte est visible ;
 - le visage est vu de face ou presque de face ;
 - le visage est suffisamment proche ;
@@ -42,7 +46,7 @@ La photo est exploitable uniquement si toutes les conditions suivantes sont réu
 - l'éclairage permet d'observer correctement la peau ;
 - aucune partie importante du visage n'est masquée.
 
-Retourne usable:false si :
+Retourne usable:false si (sur la vue de face / principale) :
 - aucun visage humain adulte exploitable n'est visible ;
 - plusieurs visages sont présents ;
 - la photo montre un enfant ou un bébé ;
@@ -57,7 +61,7 @@ Retourne usable:false si :
 - un masque, un foulard, une main ou un autre élément cache une partie importante du visage ;
 - un filtre beauté ou un traitement d'image empêche une observation fiable de la peau.
 
-En cas de doute, retourne usable:false.
+En cas de doute sur la face, retourne usable:false.
 
 Si usable:false :
 
@@ -213,8 +217,20 @@ export default async function handler(req, res) {
     const payload = req.body?.payload || req.body || {};
     if (!assertPayloadShape(payload, res)) return;
 
-    const photoBase64 = payload?.photo?.base64 || null;
-    const hasPhoto = Boolean(payload?.photo?.provided && photoBase64);
+    const photo = payload?.photo || {};
+    const views = Array.isArray(photo.views)
+      ? photo.views.filter((v) => v && typeof v.base64 === "string" && v.base64.length > 32)
+      : [];
+    const front =
+      views.find((v) => v.angle === "front") ||
+      views[0] ||
+      (photo.base64 ? { angle: "front", base64: photo.base64 } : null);
+    const imageViews = views.length
+      ? views.slice(0, 3)
+      : front
+        ? [front]
+        : [];
+    const hasPhoto = Boolean(photo.provided && imageViews.length);
 
     const content = [
       {
@@ -223,11 +239,15 @@ export default async function handler(req, res) {
       }
     ];
 
-    if (hasPhoto) {
+    for (const view of imageViews) {
+      content.push({
+        type: "input_text",
+        text: `Vue photo : ${view.angle || "front"}`
+      });
       content.push({
         type: "input_image",
-        image_url: photoBase64,
-        detail: "low"
+        image_url: view.base64,
+        detail: "high"
       });
     }
 
